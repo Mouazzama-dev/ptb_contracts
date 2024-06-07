@@ -25,6 +25,7 @@ pub mod minter {
                 * emissions_account.decay_factor)
                 as u64;
         }
+        msg!("New emissions after decay: {}", emissions_account.current_emissions);
 
         // Minting tokens, adjusted for decimals
         let mint_amount = emissions_account.current_emissions * 1_000_00; // Adjust for decimals

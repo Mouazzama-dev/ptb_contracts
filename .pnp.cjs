@@ -33,6 +33,7 @@ const RAW_RUNTIME_STATE =
           ["@types/bn.js", "npm:5.1.5"],\
           ["@types/chai", "npm:4.3.16"],\
           ["@types/mocha", "npm:9.1.1"],\
+          ["bignumber.js", "npm:9.1.2"],\
           ["chai", "npm:4.4.1"],\
           ["mocha", "npm:9.2.2"],\
           ["prettier", "npm:2.8.8"],\
@@ -2267,6 +2268,7 @@ const RAW_RUNTIME_STATE =
           ["@types/bn.js", "npm:5.1.5"],\
           ["@types/chai", "npm:4.3.16"],\
           ["@types/mocha", "npm:9.1.1"],\
+          ["bignumber.js", "npm:9.1.2"],\
           ["chai", "npm:4.4.1"],\
           ["mocha", "npm:9.2.2"],\
           ["prettier", "npm:2.8.8"],\
