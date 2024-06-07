@@ -1,12 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { Minter } from "../target/types/minter";
+import { PtbContracts } from "../target/types/ptb_contracts";
 
-describe("minter", () => {
+describe("ptb_contracts", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
-  const program = anchor.workspace.Minter as Program<Minter>;
+  const program = anchor.workspace.PtbContracts as Program<PtbContracts>;
 
   it("Is initialized!", async () => {
     // Add your test here.

@@ -1,12 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { Minter } from "../target/types/minter";
+import { RewardDist } from "../target/types/reward_dist"
 
-describe("minter", () => {
+describe("reward_dist", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
-  const program = anchor.workspace.Minter as Program<Minter>;
+  const program = anchor.workspace.RewardDist as Program<RewardDist>;
 
   it("Is initialized!", async () => {
     // Add your test here.

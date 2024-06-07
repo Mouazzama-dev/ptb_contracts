@@ -3,6 +3,9 @@ seeds = false
 skip-lint = false
 [programs.localnet]
 minter = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgio"
+reward_dist = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgi2"
+emission_dist = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgi3"
+
 
 [registry]
 url = "https://api.apr.dev"

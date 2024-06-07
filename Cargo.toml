@@ -1,6 +1,8 @@
 [workspace]
 members = [
-    "programs/*"
+    "programs/minter",
+    "programs/reward_dist",
+    "programs/emission_dist"
 ]
 
 [profile.release]
