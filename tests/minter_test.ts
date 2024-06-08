@@ -2,142 +2,142 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Minter } from "../target/types/minter";
 import { TOKEN_PROGRAM_ID, MintLayout, createInitializeMintInstruction, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
-import { PublicKey, SystemProgram, Transaction, Keypair } from "@solana/web3.js";
-import * as assert from "assert";
+import { SystemProgram, Transaction } from "@solana/web3.js";
+import { assert } from "chai";
 
 describe("minter", () => {
   // Configure the client to use the local cluster.
-  const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
+  anchor.setProvider(anchor.AnchorProvider.env());
 
   const program = anchor.workspace.Minter as Program<Minter>;
+  const provider = anchor.AnchorProvider.env();
+  const wallet = provider.wallet;
 
-  let mint: Keypair;
-  let emissionsAccount: Keypair;
-  let burnAccount: Keypair;
-  let tokenAccount: PublicKey;
+  const emissionsAccountKeypair = anchor.web3.Keypair.generate();
+  const burnAccountKeypair = anchor.web3.Keypair.generate();
+  const burnPoolAuthorityKeypair = anchor.web3.Keypair.generate();
+  const mintKeypair = anchor.web3.Keypair.generate();
 
-  before(async () => {
-    // Generate new keypairs for the mint, emissions account, and burn account
-    mint = anchor.web3.Keypair.generate();
-    emissionsAccount = anchor.web3.Keypair.generate();
-    burnAccount = anchor.web3.Keypair.generate();
+  const emissionsAccount = emissionsAccountKeypair.publicKey;
+  const burnAccount = burnAccountKeypair.publicKey;
+  const burnPoolAuthority = burnPoolAuthorityKeypair.publicKey;
 
-    console.log("Creating mint account...");
-    const mintRent = await provider.connection.getMinimumBalanceForRentExemption(MintLayout.span);
+  it("Create and initialize mint account", async () => {
+    const lamports = await provider.connection.getMinimumBalanceForRentExemption(MintLayout.span);
     const transaction = new Transaction().add(
       SystemProgram.createAccount({
-        fromPubkey: provider.wallet.publicKey,
-        newAccountPubkey: mint.publicKey,
-        lamports: mintRent,
+        fromPubkey: wallet.publicKey,
+        newAccountPubkey: mintKeypair.publicKey,
         space: MintLayout.span,
+        lamports: lamports,
         programId: TOKEN_PROGRAM_ID,
       }),
       createInitializeMintInstruction(
-        mint.publicKey,
-        9, // decimals
-        provider.wallet.publicKey, // mint authority
-        provider.wallet.publicKey // freeze authority
+        mintKeypair.publicKey,
+        0, // Decimals
+        wallet.publicKey,
+        wallet.publicKey,
+        TOKEN_PROGRAM_ID
       )
     );
+    await provider.sendAndConfirm(transaction, [mintKeypair]);
 
-    await provider.sendAndConfirm(transaction, [mint]);
-    console.log("Mint account created.");
-
-    // Get or create the associated token account
-    console.log("Getting or creating associated token account...");
-    const userTokenAccount = await getOrCreateAssociatedTokenAccount(
+    await getOrCreateAssociatedTokenAccount(
       provider.connection,
-      provider.wallet.payer,
-      mint.publicKey,
-      provider.wallet.publicKey
+      wallet.payer,
+      mintKeypair.publicKey,
+      wallet.publicKey
     );
-    tokenAccount = userTokenAccount.address;
-    console.log("Associated token account created.");
   });
 
-  it("Is initialized!", async () => {
-    // Add your test here.
-    console.log("Starting test initialization...");
-    const tx = await program.methods.initialize().accounts({
-      emissionsAccount: emissionsAccount.publicKey,
-      burnAccount: burnAccount.publicKey,
-      user: provider.wallet.publicKey,
-      systemProgram: SystemProgram.programId,
-    }).signers([emissionsAccount, burnAccount]).rpc();
+  it("Initialize accounts", async () => {
+    const tx = await program.methods
+      .initialize()
+      .accounts({
+        emissionsAccount,
+        burnAccount,
+        user: wallet.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([emissionsAccountKeypair, burnAccountKeypair])
+      .rpc();
 
-    console.log("Your transaction signature", tx);
+    console.log("Your transaction signature:", tx);
+
+    const emissionsData = await program.account.emissionsAccount.fetch(emissionsAccount);
+    assert.equal(emissionsData.initialEmissions, 3000000000);
+    assert.equal(emissionsData.decayFactor, 0.8705505633);
+    assert.equal(emissionsData.currentMonth, 0);
+    assert.equal(emissionsData.currentEmissions, 3000000000);
+
+    const burnData = await program.account.burnAccount.fetch(burnAccount);
+    assert.equal(burnData.totalBurned, 0);
   });
 
-  it("Mints tokens based on emission schedule", async () => {
-    // Fetch the initial token account balance.
-    const initialBalance = await getTokenAccountBalance(provider, tokenAccount);
-    console.log("Initial Balance:", initialBalance);
-    console.log(emissionsAccount.publicKey.toString());
-    console.log(provider.wallet.publicKey.toString());
+  it("Calculate and Mint", async () => {
+    const associatedTokenAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet.payer,
+      mintKeypair.publicKey,
+      wallet.publicKey
+    );
 
-    // Mint tokens for the first month.
-    await program.rpc.calculateAndMint({
-      accounts: {
-        emissionsAccount: emissionsAccount.publicKey,
-        mint: mint.publicKey,
-        to: tokenAccount,
+    const tx = await program.methods.calculateAndMint()
+      .accounts({
+        emissionsAccount,
+        mint: mintKeypair.publicKey,
+        to: associatedTokenAccount.address,
         tokenProgram: TOKEN_PROGRAM_ID,
-        user: provider.wallet.publicKey,
-      },
-    });
+        user: wallet.publicKey,
+      })
+      .signers([wallet.payer])
+      .rpc();
 
-    // Fetch the token account balance after the first month minting.
-    let tokenAccountInfo = await getTokenAccountBalance(provider, tokenAccount);
-    let firstMonthEmission = 3_000_000_000 * 1_000_00; // Adjust for decimals
-    console.log(
-      "Expected Balance after first month:",
-      initialBalance + firstMonthEmission
+    console.log("Your transaction signature:", tx);
+
+    const emissionsData = await program.account.emissionsAccount.fetch(emissionsAccount);
+    assert.equal(emissionsData.currentMonth, 1);
+    console.log(emissionsData.currentEmissions.toString());
+  });
+
+  it("Burn Tokens", async () => {
+    const mint = mintKeypair.publicKey;
+
+    const associatedTokenAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet.payer,
+      mint,
+      burnPoolAuthority
     );
-    console.log("Actual Balance after first month:", tokenAccountInfo);
-    assert.equal(tokenAccountInfo, initialBalance + firstMonthEmission);
-    tokenAccountInfo = await getTokenAccountBalance(provider, tokenAccount);
-    console.log(tokenAccountInfo)
-    // Mint tokens for the second month.
-    await program.rpc.calculateAndMint({
-      accounts: {
-        emissionsAccount: emissionsAccount.publicKey,
-        mint: mint.publicKey,
-        to: tokenAccount,
+    const burnPoolAccount = associatedTokenAccount.address;
+
+    await program.methods
+      .calculateAndMint()
+      .accounts({
+        emissionsAccount,
+        mint: mint,
+        to: burnPoolAccount,
         tokenProgram: TOKEN_PROGRAM_ID,
-        user: provider.wallet.publicKey,
-      },
-    });
+        user: wallet.publicKey,
+      })
+      .signers([wallet.payer])
+      .rpc();
 
-    // Fetch the token account balance after the second month minting.
-    tokenAccountInfo = await getTokenAccountBalance(provider, tokenAccount);
-    console.log(tokenAccountInfo)
+    const tx = await program.methods
+      .burnTokens(new anchor.BN(500000))
+      .accounts({
+        mint: mint,
+        burnPoolAccount: burnPoolAccount,
+        burnPoolAuthority: burnPoolAuthority,
+        burnAccount: burnAccount,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([burnPoolAuthorityKeypair])
+      .rpc();
 
-    let secondMonthEmission = Math.floor(firstMonthEmission * 0.8705505633);
-    console.log(
-      "Expected Balance after second month:",
-      initialBalance + firstMonthEmission + secondMonthEmission
-    );
-    console.log("Actual Balance after second month:", tokenAccountInfo);
+    console.log("Your transaction signature:", tx);
 
-    console.log(
-      `Assert: ${tokenAccountInfo} == ${initialBalance + firstMonthEmission + secondMonthEmission}`
-    );
-     console.log(initialBalance)
-     console.log(firstMonthEmission)
-     console.log(secondMonthEmission)
-
-
-    console.log(tokenAccountInfo - ( initialBalance + firstMonthEmission + secondMonthEmission))
-    assert.equal(
-      tokenAccountInfo,
-      initialBalance + firstMonthEmission + secondMonthEmission
-    );
+    const burnData = await program.account.burnAccount.fetch(burnAccount);
+    console.log("Total Burned:", burnData.totalBurned.toString()); // Convert BN to string
   });
 });
-
-// Helper function to fetch token account balance
-async function getTokenAccountBalance(provider: anchor.AnchorProvider, tokenAccount: PublicKey) {
-  const accountInfo = await provider.connection.getTokenAccountBalance(tokenAccount);
-  return parseInt(accountInfo.value.amount);
-}

@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Burn, Mint, MintTo, TokenAccount};
+use anchor_spl::token::{self, Burn, Mint, MintTo, Token, TokenAccount};
 
 declare_id!("6cu3q3HcEYc4ZhQe2hQw3rsRZXkebEyw4ZebzNHYzQWG");
 
@@ -44,27 +44,19 @@ pub mod minter {
         Ok(())
     }
 
-    pub fn burn_tokens(ctx: Context<BurnToken>, amount: u64) -> Result<()> {
+    pub fn burn_tokens(ctx: Context<BurnTokens>, amount: u64) -> Result<()> {
+        let cpi_accounts = Burn {
+            mint: ctx.accounts.mint.to_account_info(),
+            from: ctx.accounts.burn_pool_account.to_account_info(),
+            authority: ctx.accounts.burn_pool_authority.to_account_info(), // Use the correct authority
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+        token::burn(cpi_ctx, amount)?;
+
+        // Update total burned in the burn account
         let burn_account = &mut ctx.accounts.burn_account;
-
-        // Ensure there are enough tokens to burn
-        require!(
-            burn_account.tokens_to_burn >= amount,
-            ErrorCode::InsufficientTokens
-        );
-
-        let cpi_context = CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            Burn {
-                from: ctx.accounts.burn_pool.to_account_info(),
-                mint: ctx.accounts.mint.to_account_info(),
-                authority: ctx.accounts.user.to_account_info(),
-            },
-        );
-        token::burn(cpi_context, amount)?;
-
-        // Update the burn account's state
-        burn_account.tokens_to_burn -= amount;
+        burn_account.total_burned += amount;
 
         Ok(())
     }
@@ -96,17 +88,17 @@ pub struct CalculateAndMint<'info> {
 }
 
 #[derive(Accounts)]
-pub struct BurnToken<'info> {
+pub struct BurnTokens<'info> {
     #[account(mut)]
-    pub burn_pool: Account<'info, TokenAccount>,
+    pub mint: Account<'info, token::Mint>,
     #[account(mut)]
-    pub mint: Account<'info, Mint>,
-    #[account(mut)]
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub token_program: AccountInfo<'info>,
+    pub burn_pool_account: Account<'info, TokenAccount>, // The specific token account to burn from
+    #[account(signer)]
+    /// CHECK: We are doing read or write from this account
+    pub burn_pool_authority: AccountInfo<'info>, // Authority for the source token account
     #[account(mut)]
     pub burn_account: Account<'info, BurnAccount>,
-    pub user: Signer<'info>,
+    pub token_program: Program<'info, Token>,
 }
 
 #[account]
@@ -119,11 +111,5 @@ pub struct EmissionsAccount {
 
 #[account]
 pub struct BurnAccount {
-    pub tokens_to_burn: u64,
-}
-
-#[error_code]
-pub enum ErrorCode {
-    #[msg("Insufficient tokens to burn.")]
-    InsufficientTokens,
+    pub total_burned: u64,
 }
