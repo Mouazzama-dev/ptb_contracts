@@ -5,6 +5,7 @@ skip-lint = false
 minter = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgio"
 reward_dist = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgi2"
 emission_dist = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgi3"
+staking = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDg45"
 
 
 [registry]
