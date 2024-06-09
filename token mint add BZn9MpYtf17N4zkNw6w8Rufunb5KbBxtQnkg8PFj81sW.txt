@@ -1,0 +1,32 @@
+token mint add 			BZn9MpYtf17N4zkNw6w8Rufunb5KbBxtQnkg8PFj81sW
+associated token acc 		D34FLYnrYWbVqFF79JSLjkKbCLRKgQWMxAnZvycvwiGe
+update authority 		ownAuqguAnoQ88F5X6MMTbehTWp3eCSCJozQWLQJFGr
+
+burn pool 
+	burn pool authority: 4MguoanKH5gEbficrG5jw4aKa8Y8DU1bjikRUg1tpRf3
+  	burn pool account: 4sZdBW1BdrR2wzq7aX2XWHVbeh4dy6HXUaw4bkwB2wiE
+  	
+global tapping 
+	global tapping auth: 78Fjj6WagcQcikf5gFXBP6fwKVQrmxm7Sq3uLsY4MqDh
+  	global tapping account: DvDQ2s5EAUuz2jfL4zV8qnEc4SaT7tCCx3nvYrUStm7a
+
+loot raffle 
+	loot raffle auth: B8yv83Q8yUmdB2mZQow8f3DemirJsrjgpiyCmKUfSYte
+  	loot raffle  account: 97gWU4x5Xu28LVcjEjfvreVgjJ5gHGdkf4xdVp79Bb2b
+
+tading fee 
+	tading fee  auth :  3c4Pu4W66G7NvRYukF5f7SUyvWy7GtcXsH3Qm6T7438V
+  	tading fee  account: 3BQvkbJENvDQZfx9i8iHEbRq7uhLbd5xUTUcNvc5QXEp
+  	
+burn pool
+	burn pool auth: 2dfqCJosAnk8awTkXiHUDDhzYKNtqBYRxPwj5jzETVPX
+  	burn pool account: FNQD1oeJrFVAvw3JXp6zdbmEDwC1KEb78X11o4Wmb264
+
+team pool 
+	team pool auth: 53CBnLNQar6vsAvERm8FoBzvU36bddD7Wg8WPYDYndQX
+  	team pool account: 3HhTheHoxqb9n3eaHQxeNxWKuLFLAcupCvmqdUDR4MoF
+
+game dst pool 
+	 game dst pool auth qB93gD1bAupRD65skH2AgDVU9xa7CnoErqSPQ7UhmBA
+  	game dst account: FS93HYZs4UVHiH5aGaBk2Nwp8L18f6nMkrtAM9WtkmYB
+
