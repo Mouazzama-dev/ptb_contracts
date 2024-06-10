@@ -37,7 +37,7 @@ mod staking {
         Ok(())
     }
 }
-aa
+
 #[account]
 pub struct StakingAccount {
     pub total_staked: u64,
