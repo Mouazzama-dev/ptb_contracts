@@ -29,4 +29,20 @@ team pool
 game dst pool 
 	 game dst pool auth qB93gD1bAupRD65skH2AgDVU9xa7CnoErqSPQ7UhmBA
   	game dst account: FS93HYZs4UVHiH5aGaBk2Nwp8L18f6nMkrtAM9WtkmYB
+  	
+staking account
+  Recipient: 2UmcN3Bz9dTcqwwPgnYGjabGvYBtkJUdoj1YBn1KRfqr
+  Recipient associated token account: AonqnWtbY5r1QFZU5ATPugSuMmjiCK6DMKZEVYTfTpWG
+
+admin (for staking)
+Recipient: AofwKSrDSzPULMWZy9CoJYWDPABLR6nHuqwxhqJ55FM3
+  Recipient associated token account: 3X2MKFhhHkcRE1FT9fUHvutMTfPRLkh5BgUcm2jb8AWa
+
+
+
+
+
+
+
+
 

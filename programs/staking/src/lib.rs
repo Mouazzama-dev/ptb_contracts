@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use std::str::FromStr;
 
-declare_id!("13butYyAmNAzDdigb7KfMRJLT3u3YQ1D6yqkNC6288do");
+declare_id!("ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDg45");
 
 const ADMIN_WALLET: &str = "AofwKSrDSzPULMWZy9CoJYWDPABLR6nHuqwxhqJ55FM3";
 const ADMIN_TOKEN_ACCOUNT: &str = "3X2MKFhhHkcRE1FT9fUHvutMTfPRLkh5BgUcm2jb8AWa";
