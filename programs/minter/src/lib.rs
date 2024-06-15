@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, MintTo, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Mint, MintTo, TokenAccount, Transfer};
 
 declare_id!("YJFLxAasyQrfxEqNzvcb2QKX1x2Xmgxcv61AgQuciay");
 
@@ -16,11 +16,14 @@ pub mod minter {
 
         // Initialize the loot raffle pool PDA
         emissions_account.loot_raffle_pool = ctx.accounts.loot_raffle_pool.key();
-        emissions_account.loot_raffle_amount = 0;
+        emissions_account.loot_raffle_amount = 50_000_000; // Start with 50 million tokens each month
+        emissions_account.loot_raffle_total = 50_000_000;
+
 
         // Initialize the global tapping pool PDA
         emissions_account.global_tapping_pool = ctx.accounts.global_tapping_pool.key();
-        emissions_account.global_tapping_amount = 0;
+        emissions_account.global_tapping_amount = 1_000_000_000; // Start with 1 billion tokens each month
+        emissions_account.global_tapping_total = 1_000_000_000;
 
         Ok(())
     }
@@ -47,6 +50,18 @@ pub mod minter {
         let cpi_context = CpiContext::new(cpi_program, cpi_accounts);
         token::mint_to(cpi_context, mint_amount)?;
 
+        // Reset the global tapping pool amount each month
+        emissions_account.global_tapping_amount = 1_000_000_000;
+        emissions_account.global_tapping_total = 1_000_000_000;
+
+        // Calculate the new loot raffle amount based on decay factor
+        if emissions_account.current_month > 0 {
+            emissions_account.loot_raffle_amount = (emissions_account.loot_raffle_amount as f64
+                * emissions_account.decay_factor)
+                as u64;
+        }
+        emissions_account.loot_raffle_total = emissions_account.loot_raffle_amount;
+
         // Increment month after minting
         emissions_account.current_month += 1;
 
@@ -61,17 +76,21 @@ pub mod minter {
         
         match pool_type {
             PoolType::LootRaffle => {
+                // Ensure there are enough tokens in the loot raffle pool
+                require!(amount <= emissions_account.loot_raffle_amount, CustomError::InsufficientFunds);
                 // Update the loot raffle pool amount
                 emissions_account.loot_raffle_amount = emissions_account
                     .loot_raffle_amount
-                    .checked_add(amount)
+                    .checked_sub(amount)
                     .ok_or(CustomError::Overflow)?;
             }
             PoolType::GlobalTapping => {
+                // Ensure there are enough tokens in the global tapping pool
+                require!(amount <= emissions_account.global_tapping_amount, CustomError::InsufficientFunds);
                 // Update the global tapping pool amount
                 emissions_account.global_tapping_amount = emissions_account
                     .global_tapping_amount
-                    .checked_add(amount)
+                    .checked_sub(amount)
                     .ok_or(CustomError::Overflow)?;
             }
         }
@@ -92,7 +111,7 @@ pub mod minter {
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(init, seeds = [b"emissions_account"], bump, payer = user, space = 8 + 32 + 32 + 32 + 32 + 8 + 32 + 8 + 32 + 8)]
+    #[account(init, seeds = [b"emissions_account"], bump, payer = user, space = 8 + 32 + 32 + 32 + 32 + 8 + 32 + 8 + 32 + 8 + 8 + 8 )]
     pub emissions_account: Account<'info, EmissionsAccount>,
     #[account(init, payer = user, space = 8 + 32, seeds = [b"loot_raffle_pool"], bump)]
     pub loot_raffle_pool: Account<'info, LootRafflePool>,
@@ -143,8 +162,10 @@ pub struct EmissionsAccount {
     pub current_emissions: u64,
     pub loot_raffle_pool: Pubkey,
     pub loot_raffle_amount: u64,
+    pub loot_raffle_total: u64,
     pub global_tapping_pool: Pubkey,
     pub global_tapping_amount: u64,
+    pub global_tapping_total: u64,
 }
 
 #[account]
@@ -171,4 +192,6 @@ pub enum CustomError {
     InvalidAmount,
     #[msg("Arithmetic overflow.")]
     Overflow,
+    #[msg("Insufficient funds in the pool.")]
+    InsufficientFunds,
 }
