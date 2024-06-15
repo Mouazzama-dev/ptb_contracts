@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Burn, Mint, MintTo, Token, TokenAccount};
+use anchor_spl::token::{self, Mint, MintTo, Token, TokenAccount, Transfer};
 
-declare_id!("HK4orxLDibiGU9VKG5typAbwxbhuiq3hQDSdiEKrmWSv");
+declare_id!("YJFLxAasyQrfxEqNzvcb2QKX1x2Xmgxcv61AgQuciay");
 
 #[program]
 pub mod minter {
@@ -13,6 +13,15 @@ pub mod minter {
         emissions_account.decay_factor = 0.8705505633;
         emissions_account.current_month = 0;
         emissions_account.current_emissions = 3_000_000_000; // Start with 3 billion tokens for the first month
+
+        // Initialize the loot raffle pool PDA
+        emissions_account.loot_raffle_pool = ctx.accounts.loot_raffle_pool.key();
+        emissions_account.loot_raffle_amount = 0;
+
+        // Initialize the global tapping pool PDA
+        emissions_account.global_tapping_pool = ctx.accounts.global_tapping_pool.key();
+        emissions_account.global_tapping_amount = 0;
+
         Ok(())
     }
 
@@ -32,7 +41,7 @@ pub mod minter {
         let cpi_accounts = MintTo {
             mint: ctx.accounts.mint.to_account_info(),
             to: ctx.accounts.to.to_account_info(),
-            authority: ctx.accounts.user.to_account_info(),
+            authority: ctx.accounts.mint_authority.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_context = CpiContext::new(cpi_program, cpi_accounts);
@@ -44,19 +53,38 @@ pub mod minter {
         Ok(())
     }
 
-    pub fn burn_tokens(ctx: Context<BurnTokens>, amount: u64) -> Result<()> {
-        let cpi_accounts = Burn {
-            mint: ctx.accounts.mint.to_account_info(),
-            from: ctx.accounts.burn_pool_account.to_account_info(),
-            authority: ctx.accounts.burn_pool_authority.to_account_info(), // Use the correct authority
+    pub fn claim_rewards(ctx: Context<ClaimRewards>, amount: u64, pool_type: PoolType) -> Result<()> {
+        let emissions_account = &mut ctx.accounts.emissions_account;
+
+        // Ensure that the amount is valid and within limits
+        require!(amount > 0, CustomError::InvalidAmount);
+        
+        match pool_type {
+            PoolType::LootRaffle => {
+                // Update the loot raffle pool amount
+                emissions_account.loot_raffle_amount = emissions_account
+                    .loot_raffle_amount
+                    .checked_add(amount)
+                    .ok_or(CustomError::Overflow)?;
+            }
+            PoolType::GlobalTapping => {
+                // Update the global tapping pool amount
+                emissions_account.global_tapping_amount = emissions_account
+                    .global_tapping_amount
+                    .checked_add(amount)
+                    .ok_or(CustomError::Overflow)?;
+            }
+        }
+
+        // Transfer tokens from the mint to the user's account
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.mint.to_account_info(),
+            to: ctx.accounts.user_token_account.to_account_info(),
+            authority: ctx.accounts.mint_authority.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-        token::burn(cpi_ctx, amount)?;
-
-        // Update total burned in the burn account
-        let burn_account = &mut ctx.accounts.burn_account;
-        burn_account.total_burned += amount;
+        let cpi_context = CpiContext::new(cpi_program, cpi_accounts);
+        token::transfer(cpi_context, amount)?;
 
         Ok(())
     }
@@ -64,14 +92,17 @@ pub mod minter {
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(init, payer = user, space = 8 + 32 + 32 + 32 + 32 + 8)]
+    #[account(init, seeds = [b"emissions_account"], bump, payer = user, space = 8 + 32 + 32 + 32 + 32 + 8 + 32 + 8 + 32 + 8)]
     pub emissions_account: Account<'info, EmissionsAccount>,
-    #[account(init, payer = user, space = 8 + 8)]
-    pub burn_account: Account<'info, BurnAccount>,
+    #[account(init, payer = user, space = 8 + 32, seeds = [b"loot_raffle_pool"], bump)]
+    pub loot_raffle_pool: Account<'info, LootRafflePool>,
+    #[account(init, payer = user, space = 8 + 32, seeds = [b"global_tapping_pool"], bump)]
+    pub global_tapping_pool: Account<'info, GlobalTappingPool>,
     #[account(mut)]
     pub user: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
+
 
 #[derive(Accounts)]
 pub struct CalculateAndMint<'info> {
@@ -82,23 +113,26 @@ pub struct CalculateAndMint<'info> {
     #[account(mut)]
     pub to: Account<'info, TokenAccount>,
     #[account(mut)]
+    pub mint_authority: Signer<'info>,
+    #[account(mut)]
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub token_program: AccountInfo<'info>,
-    pub user: Signer<'info>,
 }
 
 #[derive(Accounts)]
-pub struct BurnTokens<'info> {
+pub struct ClaimRewards<'info> {
     #[account(mut)]
-    pub mint: Account<'info, token::Mint>,
+    pub emissions_account: Account<'info, EmissionsAccount>,
     #[account(mut)]
-    pub burn_pool_account: Account<'info, TokenAccount>, // The specific token account to burn from
-    #[account(signer)]
-    /// CHECK: We are doing read or write from this account
-    pub burn_pool_authority: AccountInfo<'info>, // Authority for the source token account
+    pub mint: Account<'info, Mint>,
     #[account(mut)]
-    pub burn_account: Account<'info, BurnAccount>,
-    pub token_program: Program<'info, Token>,
+    pub user_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub mint_authority: Signer<'info>,
+    #[account(mut)]
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub token_program: AccountInfo<'info>,
+    pub user: Signer<'info>,
 }
 
 #[account]
@@ -107,9 +141,34 @@ pub struct EmissionsAccount {
     pub decay_factor: f64,
     pub current_month: u64,
     pub current_emissions: u64,
+    pub loot_raffle_pool: Pubkey,
+    pub loot_raffle_amount: u64,
+    pub global_tapping_pool: Pubkey,
+    pub global_tapping_amount: u64,
 }
 
 #[account]
-pub struct BurnAccount {
-    pub total_burned: u64,
+pub struct LootRafflePool {
+    pub pool_id: Pubkey,
+    pub amount: u64,
+}
+
+#[account]
+pub struct GlobalTappingPool {
+    pub pool_id: Pubkey,
+    pub amount: u64,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub enum PoolType {
+    LootRaffle,
+    GlobalTapping,
+}
+
+#[error_code]
+pub enum CustomError {
+    #[msg("Invalid amount specified.")]
+    InvalidAmount,
+    #[msg("Arithmetic overflow.")]
+    Overflow,
 }

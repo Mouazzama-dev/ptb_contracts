@@ -2,7 +2,7 @@
 seeds = false
 skip-lint = false
 [programs.devnet]
-minter = "HK4orxLDibiGU9VKG5typAbwxbhuiq3hQDSdiEKrmWSv"
+minter = "YJFLxAasyQrfxEqNzvcb2QKX1x2Xmgxcv61AgQuciay"
 reward_dist = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgi2"
 emission_dist = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgi3"
 
