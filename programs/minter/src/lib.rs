@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, MintTo, TokenAccount, Transfer};
 
-declare_id!("YJFLxAasyQrfxEqNzvcb2QKX1x2Xmgxcv61AgQuciay");
+declare_id!("AqpXhZpaTaWbcDawvWrTsstmi7Bf8XY3bLH97wXg6ipS");
 
 #[program]
 pub mod minter {
@@ -113,9 +113,9 @@ pub mod minter {
 pub struct Initialize<'info> {
     #[account(init, seeds = [b"emissions_account"], bump, payer = user, space = 8 + 32 + 32 + 32 + 32 + 8 + 32 + 8 + 32 + 8 + 8 + 8 )]
     pub emissions_account: Account<'info, EmissionsAccount>,
-    #[account(init, payer = user, space = 8 + 32, seeds = [b"loot_raffle_pool"], bump)]
+    #[account(init, payer = user, space = 8 + 32 + 32, seeds = [b"loot_raffle_pool"], bump)]
     pub loot_raffle_pool: Account<'info, LootRafflePool>,
-    #[account(init, payer = user, space = 8 + 32, seeds = [b"global_tapping_pool"], bump)]
+    #[account(init, payer = user, space = 8 + 32 + 32, seeds = [b"global_tapping_pool"], bump)]
     pub global_tapping_pool: Account<'info, GlobalTappingPool>,
     #[account(mut)]
     pub user: Signer<'info>,
