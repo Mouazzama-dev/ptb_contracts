@@ -884,15 +884,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3dca9240753cf90908d7e4aac30f630662b02aebaa1b58a3cadabdb23385b58b"
 
 [[package]]
-name = "emission_dist"
-version = "0.1.0"
-dependencies = [
- "ahash 0.8.6",
- "anchor-lang",
- "anchor-spl",
-]
-
-[[package]]
 name = "env_logger"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1210,6 +1201,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "merkle_rewards"
+version = "0.1.0"
+dependencies = [
+ "ahash 0.8.6",
+ "anchor-lang",
+ "anchor-spl",
+ "sha2 0.9.9",
 ]
 
 [[package]]
@@ -1579,15 +1580,6 @@ name = "regex-syntax"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adad44e29e4c806119491a7f06f03de4d1af22c3a680dd47f1e6e179439d1f56"
-
-[[package]]
-name = "reward_dist"
-version = "0.1.0"
-dependencies = [
- "ahash 0.8.6",
- "anchor-lang",
- "anchor-spl",
-]
 
 [[package]]
 name = "rustc-hash"

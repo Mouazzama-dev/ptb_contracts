@@ -1,12 +1,12 @@
 [package]
-name = "reward_dist"
+name = "merkle_rewards"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "reward_dist"
+name = "merkle_rewards"
 
 [features]
 no-entrypoint = []
@@ -19,3 +19,5 @@ default = []
 anchor-lang = "0.28.0"
 ahash = "=0.8.6"
 anchor-spl = "0.28.0" 
+sha2 = "0.9.8"
+

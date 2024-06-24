@@ -1,8 +1,7 @@
 [workspace]
 members = [
     "programs/minter",
-    "programs/reward_dist",
-    "programs/emission_dist"
+    "programs/merkle_rewards"
 ]
 
 [profile.release]
