@@ -1,5 +1,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, MintTo, TokenAccount, Transfer};
+// use merkle_rewards::{self, program::MerkleRewards, Initialize as MerkleInitialize};
+use merkle_rewards::program::MerkleRewards;
+use merkle_rewards::MerkleTree;
+use merkle_rewards::cpi::accounts::Claim;
 
 declare_id!("AqpXhZpaTaWbcDawvWrTsstmi7Bf8XY3bLH97wXg6ipS");
 
@@ -107,6 +111,32 @@ pub mod minter {
 
         Ok(())
     }
+
+    pub fn claim_merkle_proof(ctx: Context<ClaimMerkleProof>, user_address: Pubkey, amount: u64, proof: Vec<[u8; 32]>) -> Result<()> {
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.merkle_program.to_account_info(),
+            Claim {
+                merkle_tree: ctx.accounts.merkle_tree.to_account_info(),
+                user : ctx.accounts.user.to_account_info()
+            }
+        );
+        let res = merkle_rewards::cpi::claim(cpi_ctx, user_address, amount, proof);
+
+        // return an error if the CPI failed
+        if res.is_ok() {
+            return Ok(());
+        } else {
+            return err!(CustomError::CPIToMerkleFailed);
+        }
+    }
+}
+
+#[derive(Accounts)]
+pub struct ClaimMerkleProof<'info> {
+    #[account(mut)]
+    pub merkle_tree: Account<'info, MerkleTree>,
+    pub merkle_program: Program<'info, MerkleRewards>,
+    pub user: Signer<'info>,
 }
 
 #[derive(Accounts)]
@@ -180,6 +210,7 @@ pub struct GlobalTappingPool {
     pub amount: u64,
 }
 
+
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub enum PoolType {
     LootRaffle,
@@ -194,4 +225,6 @@ pub enum CustomError {
     Overflow,
     #[msg("Insufficient funds in the pool.")]
     InsufficientFunds,
+    #[msg("cpi to merkle rewards failed")]
+    CPIToMerkleFailed,
 }
