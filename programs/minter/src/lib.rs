@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, MintTo, TokenAccount, Transfer};
-// use merkle_rewards::{self, program::MerkleRewards, Initialize as MerkleInitialize};
 use merkle_rewards::program::MerkleRewards;
 use merkle_rewards::MerkleTree;
 use merkle_rewards::cpi::accounts::Claim;
@@ -22,7 +21,6 @@ pub mod minter {
         emissions_account.loot_raffle_pool = ctx.accounts.loot_raffle_pool.key();
         emissions_account.loot_raffle_amount = 50_000_000; // Start with 50 million tokens each month
         emissions_account.loot_raffle_total = 50_000_000;
-
 
         // Initialize the global tapping pool PDA
         emissions_account.global_tapping_pool = ctx.accounts.global_tapping_pool.key();
@@ -77,7 +75,7 @@ pub mod minter {
 
         // Ensure that the amount is valid and within limits
         require!(amount > 0, CustomError::InvalidAmount);
-        
+
         match pool_type {
             PoolType::LootRaffle => {
                 // Ensure there are enough tokens in the loot raffle pool
@@ -99,11 +97,16 @@ pub mod minter {
             }
         }
 
-        // Transfer tokens from the mint to the user's account
+        msg!("Associated Token Account: {}", ctx.accounts.associated_token_account.key());
+        msg!("User Token Account: {}", ctx.accounts.user_token_account.key());
+        msg!("Authority: {}", ctx.accounts.authority.key());
+        msg!("Token Program: {}", ctx.accounts.token_program.key());
+
+        // Transfer tokens from the associated token account to the user's token account
         let cpi_accounts = Transfer {
-            from: ctx.accounts.mint.to_account_info(),
+            from: ctx.accounts.associated_token_account.to_account_info(),
             to: ctx.accounts.user_token_account.to_account_info(),
-            authority: ctx.accounts.mint_authority.to_account_info(),
+            authority: ctx.accounts.authority.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_context = CpiContext::new(cpi_program, cpi_accounts);
@@ -152,7 +155,6 @@ pub struct Initialize<'info> {
     pub system_program: Program<'info, System>,
 }
 
-
 #[derive(Accounts)]
 pub struct CalculateAndMint<'info> {
     #[account(mut)]
@@ -173,11 +175,11 @@ pub struct ClaimRewards<'info> {
     #[account(mut)]
     pub emissions_account: Account<'info, EmissionsAccount>,
     #[account(mut)]
-    pub mint: Account<'info, Mint>,
+    pub associated_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
     pub user_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
-    pub mint_authority: Signer<'info>,
+    pub authority: Signer<'info>,
     #[account(mut)]
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub token_program: AccountInfo<'info>,
@@ -210,7 +212,6 @@ pub struct GlobalTappingPool {
     pub amount: u64,
 }
 
-
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub enum PoolType {
     LootRaffle,
@@ -225,6 +226,6 @@ pub enum CustomError {
     Overflow,
     #[msg("Insufficient funds in the pool.")]
     InsufficientFunds,
-    #[msg("cpi to merkle rewards failed")]
+    #[msg("CPI to merkle rewards failed")]
     CPIToMerkleFailed,
 }
