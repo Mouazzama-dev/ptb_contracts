@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, MintTo, TokenAccount, Transfer};
+use anchor_spl::token::{self, Mint, MintTo,Token, TokenAccount, Transfer};
 use merkle_rewards::program::MerkleRewards;
 use merkle_rewards::MerkleTree;
 use merkle_rewards::cpi::accounts::Claim;
@@ -9,6 +9,39 @@ declare_id!("AqpXhZpaTaWbcDawvWrTsstmi7Bf8XY3bLH97wXg6ipS");
 #[program]
 pub mod minter {
     use super::*;
+
+    pub fn transfer_to_bucket(ctx: Context<TransferToBucket>, bucket: String) -> Result<()> {
+        let amount = match bucket.as_str() {
+            "Seed Round" => 6_900_000_00000000,
+            "Private Sale" => 6_900_000_00000000,
+            "KOL Round" => 3_450_000_00000000,
+            "Public Sale" => 10_350_000_00000000,
+            "Airdrop" => 6_900_000_00000000,
+            "Team and Advisors" => 3_450_000_00000000,
+            "Strategic Partnerships" => 3_450_000_00000000,
+            _ => return Err(ErrorCode::InvalidBucket.into()),
+        };
+
+        let cpi_accounts = MintTo {
+            mint: ctx.accounts.mint.to_account_info(),
+            to: ctx.accounts.to.to_account_info(),
+            authority: ctx.accounts.mint_authority.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_context = CpiContext::new(cpi_program, cpi_accounts);
+        token::mint_to(cpi_context, amount)?;
+
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.associated_token_account.to_account_info(),
+            to: ctx.accounts.user_token_account.to_account_info(),
+            authority: ctx.accounts.authority.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_context = CpiContext::new(cpi_program, cpi_accounts);
+        token::transfer(cpi_context, amount)?;
+
+        Ok(())
+    }
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         let emissions_account = &mut ctx.accounts.emissions_account;
@@ -132,6 +165,25 @@ pub mod minter {
         Ok(())
     }
 }
+#[derive(Accounts)]
+pub struct TransferToBucket<'info> {
+    #[account(mut)]
+    pub mint: Account<'info, Mint>,
+    #[account(mut)]
+    pub to: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub mint_authority: Signer<'info>,
+    #[account(mut)]
+    pub associated_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub user_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(mut)]
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    pub token_program: AccountInfo<'info>,
+}
+
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -222,4 +274,10 @@ pub enum CustomError {
     InsufficientFunds,
     #[msg("CPI to Merkle Rewards failed.")]
     CPIToMerkleFailed,
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("Invalid bucket name.")]
+    InvalidBucket,
 }
