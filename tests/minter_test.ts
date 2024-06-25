@@ -4,15 +4,35 @@ import { PublicKey, SystemProgram, Keypair, Transaction } from "@solana/web3.js"
 import { assert } from "chai";
 import { Minter } from "../target/types/minter";
 import { TOKEN_PROGRAM_ID, MintLayout, createInitializeMintInstruction, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { MerkleRewards } from "../target/types/merkle_rewards";
 
 describe("minter", () => {
   const provider = anchor.AnchorProvider.local("https://api.devnet.solana.com");
   anchor.setProvider(provider);
 
   const program = anchor.workspace.Minter as Program<Minter>;
+  const MerkleRewardsProgram = anchor.workspace.MerkleRewards as Program<MerkleRewards>;
   const wallet = provider.wallet;
   const mintKeypair = anchor.web3.Keypair.generate();
   const userKeypair = anchor.web3.Keypair.generate(); // User keypair
+
+  const merkleRoot = Buffer.from('3e421d00400ce1cf199682f74d3eb353a0c4978a99b73c65a56aeeaa81b8189e', 'hex');
+  let merkleTreePda: PublicKey;
+  let bump: number;
+
+
+  before(async () => {
+    try {
+      [merkleTreePda, bump] = await PublicKey.findProgramAddress(
+        [Buffer.from("merkle_tree")],
+        MerkleRewardsProgram.programId
+      );
+      console.log("merkleTreePda found: ", merkleTreePda.toString());
+    } catch (error) {
+      console.error("Error finding PDA: ", error);
+      throw error;
+    }
+  });
 
   it("Initializes the emissions account", async () => {
     const [emissionsAccountPda, emissionsAccountBump] = await PublicKey.findProgramAddress(
@@ -70,6 +90,30 @@ describe("minter", () => {
     const expectedMonth = emissionsAccountData.currentMonth.toNumber();
     assert.strictEqual(emissionsAccountData.currentMonth.toNumber(), expectedMonth);
   });
+
+  it("Initializes the Merkle Tree Account!", async () => {
+    try {      
+      const tx = await MerkleRewardsProgram.methods.initialize(Array.from(merkleRoot))
+        .accounts({
+          merkleTree: merkleTreePda,
+          user: wallet.publicKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([wallet.payer])
+        .rpc({ skipPreflight: false });
+  
+      console.log("Transaction signature", tx);
+    } catch (error) {
+      // Check if the error message indicates the account is already in use
+      if (error.message.includes("already in use")) {
+        console.log("Merkle Tree Account already initialized, passing the test.");
+      } else {
+        console.error("Error initializing: ", error);
+        throw error;
+      }
+    }
+  });
+  
 
   it("Create and initialize mint account", async () => {
     const lamports = await provider.connection.getMinimumBalanceForRentExemption(MintLayout.span);
