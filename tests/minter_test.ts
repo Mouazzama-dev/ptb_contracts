@@ -21,17 +21,10 @@ describe("minter", () => {
   let bump: number;
 
   before(async () => {
-    try {
-      // Find the Merkle Tree PDA
-      [merkleTreePda, bump] = await PublicKey.findProgramAddress(
-        [Buffer.from("merkle_tree")],
-        MerkleRewardsProgram.programId
-      );
-      console.log("merkleTreePda found: ", merkleTreePda.toString());
-    } catch (error) {
-      console.error("Error finding PDA: ", error);
-      throw error;
-    }
+    [merkleTreePda, bump] = await PublicKey.findProgramAddress(
+      [Buffer.from("merkle_tree")],
+      MerkleRewardsProgram.programId
+    );
   });
 
   it("Initializes the emissions account", async () => {
@@ -81,13 +74,9 @@ describe("minter", () => {
       assert.strictEqual(emissionsAccountData.globalTappingPool.toBase58(), globalTappingPoolPda.toBase58());
       assert.strictEqual(emissionsAccountData.globalTappingAmount.toNumber(), 1000000000);
       assert.strictEqual(emissionsAccountData.globalTappingTotal.toNumber(), 1000000000);
-    } else {
-      console.log("Emissions account already initialized");
     }
 
     emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
-    console.log("Emissions account month: ", emissionsAccountData.currentMonth.toNumber());
-    console.log("Monthly Emissions: ", emissionsAccountData.currentEmissions.toNumber());
 
     const expectedMonth = emissionsAccountData.currentMonth.toNumber();
     assert.strictEqual(emissionsAccountData.currentMonth.toNumber(), expectedMonth);
@@ -104,14 +93,11 @@ describe("minter", () => {
         })
         .signers([wallet.payer])
         .rpc({ skipPreflight: false });
-  
-      console.log("Transaction signature", tx);
     } catch (error) {
       // Check if the error message indicates the account is already in use
       if (error.message.includes("already in use")) {
         console.log("Merkle Tree Account already initialized, passing the test.");
       } else {
-        console.error("Error initializing: ", error);
         throw error;
       }
     }
@@ -171,10 +157,6 @@ describe("minter", () => {
     const emissionsAccountDataBefore = await program.account.emissionsAccount.fetch(emissionsAccountPda);
     const expectedMonth = emissionsAccountDataBefore.currentMonth.toNumber() + 1;
 
-    console.log("Mint Account Info1: ", mintKeypair.publicKey);
-    console.log("Token Associated Account Info1: ", tokenAssociatedAccount.address);
-    console.log("User Associated Account Info1: ", userAssociatedAccount.address);
-
     // Calculate and mint the emissions
     await program.rpc.calculateAndMint({
       accounts: {
@@ -207,11 +189,9 @@ describe("minter", () => {
       mintKeypair.publicKey,
       wallet.publicKey
     );
-    console.log("Associated Token Account: ", associatedTokenAccount.address);
 
     // Mock user address and proof
     const userAddress = wallet.publicKey;
-    console.log("User Address: ", userAddress);
 
     // Initialize the emissions account if not already done
     let emissionsAccountData;
@@ -240,7 +220,6 @@ describe("minter", () => {
       [Buffer.from("merkle_tree_1")],
       MerkleRewardsProgram.programId
     );
-    console.log("Merkle Tree PDA: ", merkleTreePda.toString());
 
     // Fund the emissions account for testing
     await program.rpc.calculateAndMint({
@@ -269,17 +248,13 @@ describe("minter", () => {
       userKeypair.publicKey
     );
 
-    console.log("Initial Loot Raffle Amount: ", emissionsAccountData.lootRaffleAmount.toNumber());
-    console.log("Initial Global Tapping Amount: ", emissionsAccountData.globalTappingAmount.toNumber());
-
     const poolType = { lootRaffle: {} };
 
     const mintInfo = await provider.connection.getParsedAccountInfo(mintKeypair.publicKey);
     const tokenAccountInfo = await provider.connection.getParsedAccountInfo(tokenAssociatedAccount.address);
 
-    console.log("Mint Account Info: ", mintKeypair.publicKey);
-    console.log("Token Associated Account Info: ", tokenAssociatedAccount.address);
-    console.log("User Associated Account Info: ", userAssociatedAccount.address);
+    // Fetch balances before claim
+    const beforeBalance = await provider.connection.getTokenAccountBalance(userAssociatedAccount.address);
 
     // Perform the claim_rewards operation
     await program.rpc.claimRewards(valueToClaim, poolType, userAddress, formattedProof, {
@@ -296,10 +271,12 @@ describe("minter", () => {
       signers: [wallet.payer],
     });
 
-    // Fetch the updated emissions account data after claiming rewards
-    const updatedEmissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
+    // Fetch balances after claim
+    const afterBalance = await provider.connection.getTokenAccountBalance(userAssociatedAccount.address);
+
+    // Perform assertions to verify expected changes
+    assert.isAbove(afterBalance.value.uiAmount, beforeBalance.value.uiAmount, "User token account balance should increase after claiming rewards");
 
     console.log("Claimed rewards successfully");
   });
-
 });
