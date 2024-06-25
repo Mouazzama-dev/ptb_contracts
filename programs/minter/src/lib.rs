@@ -12,6 +12,8 @@ pub mod minter {
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         let emissions_account = &mut ctx.accounts.emissions_account;
+
+        // Initialize emissions account
         emissions_account.initial_emissions = 3_000_000_000; // Start with 3 billion tokens
         emissions_account.decay_factor = 0.8705505633;
         emissions_account.current_month = 0;
@@ -36,13 +38,12 @@ pub mod minter {
         // Calculate monthly emissions based on decay, starting from the second month
         if emissions_account.current_month > 0 {
             emissions_account.current_emissions = (emissions_account.current_emissions as f64
-                * emissions_account.decay_factor)
-                as u64;
+                * emissions_account.decay_factor) as u64;
         }
         msg!("New emissions after decay: {}", emissions_account.current_emissions);
 
         // Minting tokens, adjusted for decimals
-        let mint_amount = emissions_account.current_emissions * 1_000_00; // Adjust for decimals
+        let mint_amount = emissions_account.current_emissions * 100_000; // Adjust for decimals
         let cpi_accounts = MintTo {
             mint: ctx.accounts.mint.to_account_info(),
             to: ctx.accounts.to.to_account_info(),
@@ -59,8 +60,7 @@ pub mod minter {
         // Calculate the new loot raffle amount based on decay factor
         if emissions_account.current_month > 0 {
             emissions_account.loot_raffle_amount = (emissions_account.loot_raffle_amount as f64
-                * emissions_account.decay_factor)
-                as u64;
+                * emissions_account.decay_factor) as u64;
         }
         emissions_account.loot_raffle_total = emissions_account.loot_raffle_amount;
 
@@ -70,8 +70,24 @@ pub mod minter {
         Ok(())
     }
 
-    pub fn claim_rewards(ctx: Context<ClaimRewards>, amount: u64, pool_type: PoolType) -> Result<()> {
+    pub fn claim_rewards(ctx: Context<ClaimRewards>, amount: u64, pool_type: PoolType, user_address: Pubkey, proof: Vec<[u8; 32]>) -> Result<()> {
         let emissions_account = &mut ctx.accounts.emissions_account;
+
+        // CPI call to the Merkle Rewards program to claim the rewards
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.merkle_program.to_account_info(),
+            Claim {
+                merkle_tree: ctx.accounts.merkle_tree.to_account_info(),
+                user: ctx.accounts.user.to_account_info()
+            }
+        );
+        let res = merkle_rewards::cpi::claim(cpi_ctx, user_address, amount, proof);
+
+        // Return an error if the CPI call failed
+        if res.is_ok() {
+        } else {
+            return err!(CustomError::CPIToMerkleFailed);
+        }
 
         // Ensure that the amount is valid and within limits
         require!(amount > 0, CustomError::InvalidAmount);
@@ -97,6 +113,7 @@ pub mod minter {
             }
         }
 
+        // Log token account information for debugging
         msg!("Associated Token Account: {}", ctx.accounts.associated_token_account.key());
         msg!("User Token Account: {}", ctx.accounts.user_token_account.key());
         msg!("Authority: {}", ctx.accounts.authority.key());
@@ -114,37 +131,11 @@ pub mod minter {
 
         Ok(())
     }
-
-    pub fn claim_merkle_proof(ctx: Context<ClaimMerkleProof>, user_address: Pubkey, amount: u64, proof: Vec<[u8; 32]>) -> Result<()> {
-        let cpi_ctx = CpiContext::new(
-            ctx.accounts.merkle_program.to_account_info(),
-            Claim {
-                merkle_tree: ctx.accounts.merkle_tree.to_account_info(),
-                user : ctx.accounts.user.to_account_info()
-            }
-        );
-        let res = merkle_rewards::cpi::claim(cpi_ctx, user_address, amount, proof);
-
-        // return an error if the CPI failed
-        if res.is_ok() {
-            return Ok(());
-        } else {
-            return err!(CustomError::CPIToMerkleFailed);
-        }
-    }
-}
-
-#[derive(Accounts)]
-pub struct ClaimMerkleProof<'info> {
-    #[account(mut)]
-    pub merkle_tree: Account<'info, MerkleTree>,
-    pub merkle_program: Program<'info, MerkleRewards>,
-    pub user: Signer<'info>,
 }
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(init, seeds = [b"emissions_account"], bump, payer = user, space = 8 + 32 + 32 + 32 + 32 + 8 + 32 + 8 + 32 + 8 + 8 + 8 )]
+    #[account(init, seeds = [b"emissions_account"], bump, payer = user, space = 8 + 32 + 32 + 32 + 32 + 8 + 32 + 8 + 32 + 8 + 8 + 8)]
     pub emissions_account: Account<'info, EmissionsAccount>,
     #[account(init, payer = user, space = 8 + 32 + 32, seeds = [b"loot_raffle_pool"], bump)]
     pub loot_raffle_pool: Account<'info, LootRafflePool>,
@@ -184,6 +175,9 @@ pub struct ClaimRewards<'info> {
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub token_program: AccountInfo<'info>,
     pub user: Signer<'info>,
+    #[account(mut)]
+    pub merkle_tree: Account<'info, MerkleTree>,
+    pub merkle_program: Program<'info, MerkleRewards>,
 }
 
 #[account]
@@ -226,6 +220,6 @@ pub enum CustomError {
     Overflow,
     #[msg("Insufficient funds in the pool.")]
     InsufficientFunds,
-    #[msg("CPI to merkle rewards failed")]
+    #[msg("CPI to Merkle Rewards failed.")]
     CPIToMerkleFailed,
 }
