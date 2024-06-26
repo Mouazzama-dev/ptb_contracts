@@ -14,21 +14,26 @@ mod staking {
         staking_account.admin = admin;
         staking_account.total_staked = 0;
 
-        // Initialize the pool accounts with zero amounts
+        // Initialize the pool accounts with zero amounts and names
         let burn_pool = &mut ctx.accounts.burn_pool;
         burn_pool.amount = 0;
+        burn_pool.name = "burn_pool".to_string();
 
         let team_pool = &mut ctx.accounts.team_pool;
         team_pool.amount = 0;
+        team_pool.name = "team_pool".to_string();
 
         let staking_rewards_pool = &mut ctx.accounts.staking_rewards_pool;
         staking_rewards_pool.amount = 0;
+        staking_rewards_pool.name = "staking_rewards_pool".to_string();
 
         let last_push_pool = &mut ctx.accounts.last_push_pool;
         last_push_pool.amount = 0;
+        last_push_pool.name = "last_push_pool".to_string();
 
         let premium_pack_pool = &mut ctx.accounts.premium_pack_pool;
         premium_pack_pool.amount = 0;
+        premium_pack_pool.name = "premium_pack_pool".to_string();
 
         Ok(())
     }
@@ -107,15 +112,15 @@ pub struct Initialize<'info> {
         bump
     )]
     pub staking_account: Account<'info, StakingAccount>,
-    #[account(init, payer = user, space = 8 + 8, seeds = [b"burn_pool"], bump)]
+    #[account(init, payer = user, space = 8 + 8 + 32, seeds = [b"burn_pool"], bump)]
     pub burn_pool: Account<'info, Pool>,
-    #[account(init, payer = user, space = 8 + 8, seeds = [b"team_pool"], bump)]
+    #[account(init, payer = user, space = 8 + 8 + 32, seeds = [b"team_pool"], bump)]
     pub team_pool: Account<'info, Pool>,
-    #[account(init, payer = user, space = 8 + 8, seeds = [b"staking_rewards_pool"], bump)]
+    #[account(init, payer = user, space = 8 + 8 + 32, seeds = [b"staking_rewards_pool"], bump)]
     pub staking_rewards_pool: Account<'info, Pool>,
-    #[account(init, payer = user, space = 8 + 8, seeds = [b"last_push_pool"], bump)]
+    #[account(init, payer = user, space = 8 + 8 + 32, seeds = [b"last_push_pool"], bump)]
     pub last_push_pool: Account<'info, Pool>,
-    #[account(init, payer = user, space = 8 + 8, seeds = [b"premium_pack_pool"], bump)]
+    #[account(init, payer = user, space = 8 + 8 + 32, seeds = [b"premium_pack_pool"], bump)]
     pub premium_pack_pool: Account<'info, Pool>,
     #[account(mut)]
     pub user: Signer<'info>,
@@ -191,4 +196,5 @@ pub struct UserAccount {
 #[account]
 pub struct Pool {
     pub amount: u64,
+    pub name: String,
 }
