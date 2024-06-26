@@ -2,14 +2,14 @@
 seeds = false
 skip-lint = false
 [programs.devnet]
+merkle_proof = "7vqm6TUqywzR7SExTk7rDED1XPeb71k4gG7HeUixUvJK"
 staking = "BFwmbEmjJfeomE29k5dj2BXeXEGo168fVKEFR3MtwPoB"
-
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "Devnet"
 wallet = "/home/mouazzama/.config/solana/id.json"
 
 [scripts]

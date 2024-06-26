@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "programs/staking"
+    "programs/staking",
+    "programs/merkle_proof"
 ]
 
 [profile.release]
