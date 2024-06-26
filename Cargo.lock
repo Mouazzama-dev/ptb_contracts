@@ -1210,6 +1210,7 @@ dependencies = [
  "ahash 0.8.6",
  "anchor-lang",
  "anchor-spl",
+ "sha2 0.9.9",
 ]
 
 [[package]]
@@ -2011,6 +2012,7 @@ dependencies = [
  "ahash 0.8.6",
  "anchor-lang",
  "anchor-spl",
+ "merkle_proof",
 ]
 
 [[package]]
