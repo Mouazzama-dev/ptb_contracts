@@ -1,18 +1,15 @@
 [features]
 seeds = false
 skip-lint = false
-[programs.localnet]
-minter = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgio"
-reward_dist = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgi2"
-emission_dist = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgi3"
-staking = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDg45"
+[programs.devnet]
+staking = "BFwmbEmjJfeomE29k5dj2BXeXEGo168fVKEFR3MtwPoB"
 
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "/home/mouazzama/.config/solana/id.json"
 
 [scripts]
