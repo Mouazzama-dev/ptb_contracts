@@ -17,6 +17,9 @@ default = []
 
 [dependencies]
 anchor-lang = "0.28.0"
-ahash = "=0.8.6"
+ahash = "=0.8.4"
 anchor-spl = "0.28.0" 
 merkle_rewards = {path = "../merkle_rewards", features = ["cpi"]}
+# Downgrade solana-program to a compatible version
+solana-program = "1.16.27"
+solana-zk-token-sdk = "1.14.12"

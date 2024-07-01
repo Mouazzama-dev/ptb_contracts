@@ -7,8 +7,9 @@ import { TOKEN_PROGRAM_ID, MintLayout, createInitializeMintInstruction, getOrCre
 import { MerkleRewards } from "../target/types/merkle_rewards";
 
 describe("minter", () => {
-  const provider = anchor.AnchorProvider.local("https://api.devnet.solana.com");
-  anchor.setProvider(provider);
+  const provider = anchor.AnchorProvider.local("http://127.0.0.1:8899");
+anchor.setProvider(provider);
+
 
   const program = anchor.workspace.Minter as Program<Minter>;
   const MerkleRewardsProgram = anchor.workspace.MerkleRewards as Program<MerkleRewards>;
@@ -27,81 +28,81 @@ describe("minter", () => {
     );
   });
 
-//   it("Initializes the emissions account", async () => {
-//     const [emissionsAccountPda, emissionsAccountBump] = await PublicKey.findProgramAddress(
-//       [Buffer.from("emissions_account")],
-//       program.programId
-//     );
+  it("Initializes the emissions account", async () => {
+    const [emissionsAccountPda, emissionsAccountBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("emissions_account")],
+      program.programId
+    );
 
-//     const [lootRafflePoolPda, lootRafflePoolBump] = await PublicKey.findProgramAddress(
-//       [Buffer.from("loot_raffle_pool")],
-//       program.programId
-//     );
+    const [lootRafflePoolPda, lootRafflePoolBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("loot_raffle_pool")],
+      program.programId
+    );
 
-//     const [globalTappingPoolPda, globalTappingPoolBump] = await PublicKey.findProgramAddress(
-//       [Buffer.from("global_tapping_pool")],
-//       program.programId
-//     );
+    const [globalTappingPoolPda, globalTappingPoolBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("global_tapping_pool")],
+      program.programId
+    );
 
-//     let emissionsAccountData;
-//     try {
-//       emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
-//     } catch (err) {}
+    let emissionsAccountData;
+    try {
+      emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
+    } catch (err) {}
 
-//     if (!emissionsAccountData) {
-//       // Initialize the emissions account if not already done
-//       await program.rpc.initialize({
-//         accounts: {
-//           emissionsAccount: emissionsAccountPda,
-//           lootRafflePool: lootRafflePoolPda,
-//           globalTappingPool: globalTappingPoolPda,
-//           user: wallet.publicKey,
-//           systemProgram: SystemProgram.programId,
-//         },
-//         signers: [wallet.payer],
-//       });
+    if (!emissionsAccountData) {
+      // Initialize the emissions account if not already done
+      await program.rpc.initialize({
+        accounts: {
+          emissionsAccount: emissionsAccountPda,
+          lootRafflePool: lootRafflePoolPda,
+          globalTappingPool: globalTappingPoolPda,
+          user: wallet.publicKey,
+          systemProgram: SystemProgram.programId,
+        },
+        signers: [wallet.payer],
+      });
 
-//       emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
+      emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
 
-//       // Assertions to ensure the correct initialization
-//       assert.strictEqual(emissionsAccountData.initialEmissions.toNumber(), 3000000000);
-//       assert.strictEqual(emissionsAccountData.decayFactor, 0.8705505633);
-//       assert.strictEqual(emissionsAccountData.currentMonth.toNumber(), 0);
-//       assert.strictEqual(emissionsAccountData.currentEmissions.toNumber(), 3000000000);
-//       assert.strictEqual(emissionsAccountData.lootRafflePool.toBase58(), lootRafflePoolPda.toBase58());
-//       assert.strictEqual(emissionsAccountData.lootRaffleAmount.toNumber(), 50000000);
-//       assert.strictEqual(emissionsAccountData.lootRaffleTotal.toNumber(), 50000000);
-//       assert.strictEqual(emissionsAccountData.globalTappingPool.toBase58(), globalTappingPoolPda.toBase58());
-//       assert.strictEqual(emissionsAccountData.globalTappingAmount.toNumber(), 1000000000);
-//       assert.strictEqual(emissionsAccountData.globalTappingTotal.toNumber(), 1000000000);
-//     }
+      // Assertions to ensure the correct initialization
+      assert.strictEqual(emissionsAccountData.initialEmissions.toNumber(), 3000000000);
+      assert.strictEqual(emissionsAccountData.decayFactor, 0.8705505633);
+      assert.strictEqual(emissionsAccountData.currentMonth.toNumber(), 0);
+      assert.strictEqual(emissionsAccountData.currentEmissions.toNumber(), 3000000000);
+      assert.strictEqual(emissionsAccountData.lootRafflePool.toBase58(), lootRafflePoolPda.toBase58());
+      assert.strictEqual(emissionsAccountData.lootRaffleAmount.toNumber(), 50000000);
+      assert.strictEqual(emissionsAccountData.lootRaffleTotal.toNumber(), 50000000);
+      assert.strictEqual(emissionsAccountData.globalTappingPool.toBase58(), globalTappingPoolPda.toBase58());
+      assert.strictEqual(emissionsAccountData.globalTappingAmount.toNumber(), 1000000000);
+      assert.strictEqual(emissionsAccountData.globalTappingTotal.toNumber(), 1000000000);
+    }
 
-//     emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
+    emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
 
-//     const expectedMonth = emissionsAccountData.currentMonth.toNumber();
-//     assert.strictEqual(emissionsAccountData.currentMonth.toNumber(), expectedMonth);
-//   });
+    const expectedMonth = emissionsAccountData.currentMonth.toNumber();
+    assert.strictEqual(emissionsAccountData.currentMonth.toNumber(), expectedMonth);
+  });
 
-//   it("Initializes the Merkle Tree Account", async () => {
-//     try {      
-//       // Initialize the Merkle Tree Account
-//       const tx = await MerkleRewardsProgram.methods.initialize(Array.from(merkleRoot))
-//         .accounts({
-//           merkleTree: merkleTreePda,
-//           user: wallet.publicKey,
-//           systemProgram: anchor.web3.SystemProgram.programId,
-//         })
-//         .signers([wallet.payer])
-//         .rpc({ skipPreflight: false });
-//     } catch (error) {
-//       // Check if the error message indicates the account is already in use
-//       if (error.message.includes("already in use")) {
-//         console.log("Merkle Tree Account already initialized, passing the test.");
-//       } else {
-//         throw error;
-//       }
-//     }
-//   });
+  it("Initializes the Merkle Tree Account", async () => {
+    try {      
+      // Initialize the Merkle Tree Account
+      const tx = await MerkleRewardsProgram.methods.initialize(Array.from(merkleRoot))
+        .accounts({
+          merkleTree: merkleTreePda,
+          user: wallet.publicKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([wallet.payer])
+        .rpc({ skipPreflight: false });
+    } catch (error) {
+      // Check if the error message indicates the account is already in use
+      if (error.message.includes("already in use")) {
+        console.log("Merkle Tree Account already initialized, passing the test.");
+      } else {
+        throw error;
+      }
+    }
+  });
   
   it("Create and initialize mint account", async () => {
     const lamports = await provider.connection.getMinimumBalanceForRentExemption(MintLayout.span);
@@ -134,151 +135,151 @@ describe("minter", () => {
     );
   });
 
-//   it("Calculates and mints emissions", async () => {
-//     const [emissionsAccountPda, emissionsAccountBump] = await PublicKey.findProgramAddress(
-//       [Buffer.from("emissions_account")],
-//       program.programId
-//     );
+  it("Calculates and mints emissions", async () => {
+    const [emissionsAccountPda, emissionsAccountBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("emissions_account")],
+      program.programId
+    );
 
-//     const tokenAssociatedAccount = await getOrCreateAssociatedTokenAccount(
-//       provider.connection,
-//       wallet.payer,
-//       mintKeypair.publicKey,
-//       wallet.publicKey
-//     );
+    const tokenAssociatedAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet.payer,
+      mintKeypair.publicKey,
+      wallet.publicKey
+    );
 
-//     const userAssociatedAccount = await getOrCreateAssociatedTokenAccount(
-//       provider.connection,
-//       wallet.payer,
-//       mintKeypair.publicKey,
-//       userKeypair.publicKey
-//     );
+    const userAssociatedAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet.payer,
+      mintKeypair.publicKey,
+      userKeypair.publicKey
+    );
 
-//     const emissionsAccountDataBefore = await program.account.emissionsAccount.fetch(emissionsAccountPda);
-//     const expectedMonth = emissionsAccountDataBefore.currentMonth.toNumber() + 1;
+    const emissionsAccountDataBefore = await program.account.emissionsAccount.fetch(emissionsAccountPda);
+    const expectedMonth = emissionsAccountDataBefore.currentMonth.toNumber() + 1;
 
-//     // Calculate and mint the emissions
-//     await program.rpc.calculateAndMint({
-//       accounts: {
-//         emissionsAccount: emissionsAccountPda,
-//         mint: mintKeypair.publicKey,
-//         to: tokenAssociatedAccount.address,
-//         mintAuthority: wallet.publicKey,
-//         tokenProgram: TOKEN_PROGRAM_ID,
-//       },
-//       signers: [wallet.payer],
-//     });
+    // Calculate and mint the emissions
+    await program.rpc.calculateAndMint({
+      accounts: {
+        emissionsAccount: emissionsAccountPda,
+        mint: mintKeypair.publicKey,
+        to: tokenAssociatedAccount.address,
+        mintAuthority: wallet.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      signers: [wallet.payer],
+    });
 
-//     const emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
+    const emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
 
-//     // Assertions to ensure the emissions were calculated and minted correctly
-//     assert.strictEqual(emissionsAccountData.currentMonth.toNumber(), expectedMonth);
-//     assert.isAbove(emissionsAccountData.currentEmissions.toNumber(), 0);
-//   });
+    // Assertions to ensure the emissions were calculated and minted correctly
+    assert.strictEqual(emissionsAccountData.currentMonth.toNumber(), expectedMonth);
+    assert.isAbove(emissionsAccountData.currentEmissions.toNumber(), 0);
+  });
 
-//   it("Claims rewards successfully", async () => {
-//     // Derive the PDAs
-//     const [emissionsAccountPda, emissionsAccountBump] = await PublicKey.findProgramAddress(
-//       [Buffer.from("emissions_account")],
-//       program.programId
-//     );
+  it("Claims rewards successfully", async () => {
+    // Derive the PDAs
+    const [emissionsAccountPda, emissionsAccountBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("emissions_account")],
+      program.programId
+    );
 
-//     const associatedTokenAccount = await getOrCreateAssociatedTokenAccount(
-//       provider.connection,
-//       wallet.payer,
-//       mintKeypair.publicKey,
-//       wallet.publicKey
-//     );
+    const associatedTokenAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet.payer,
+      mintKeypair.publicKey,
+      wallet.publicKey
+    );
 
-//     // Mock user address and proof
-//     const userAddress = wallet.publicKey;
+    // Mock user address and proof
+    const userAddress = wallet.publicKey;
 
-//     // Initialize the emissions account if not already done
-//     let emissionsAccountData;
-//     try {
-//       emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
-//     } catch (err) {
-//       await program.rpc.initialize({
-//         accounts: {
-//           emissionsAccount: emissionsAccountPda,
-//           lootRafflePool: emissionsAccountPda,
-//           globalTappingPool: emissionsAccountPda,
-//           user: wallet.publicKey,
-//           systemProgram: SystemProgram.programId,
-//         },
-//         signers: [wallet.payer],
-//       });
-//       emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
-//     }
+    // Initialize the emissions account if not already done
+    let emissionsAccountData;
+    try {
+      emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
+    } catch (err) {
+      await program.rpc.initialize({
+        accounts: {
+          emissionsAccount: emissionsAccountPda,
+          lootRafflePool: emissionsAccountPda,
+          globalTappingPool: emissionsAccountPda,
+          user: wallet.publicKey,
+          systemProgram: SystemProgram.programId,
+        },
+        signers: [wallet.payer],
+      });
+      emissionsAccountData = await program.account.emissionsAccount.fetch(emissionsAccountPda);
+    }
 
-//     // Define the amount to claim and the pool type
-//     const amountToClaim = 5; // Example amount
-//     const proof = [Buffer.from('df11146d98716abe954b4a08a4064f51aa22b62a327802230e69994ba600e879', 'hex')];
-//     const formattedProof = proof.map(p => Array.from(p));
+    // Define the amount to claim and the pool type
+    const amountToClaim = 5; // Example amount
+    const proof = [Buffer.from('df11146d98716abe954b4a08a4064f51aa22b62a327802230e69994ba600e879', 'hex')];
+    const formattedProof = proof.map(p => Array.from(p));
 
-//     [merkleTreePda, bump] = await PublicKey.findProgramAddress(
-//       [Buffer.from("merkle_tree_1")],
-//       MerkleRewardsProgram.programId
-//     );
+    [merkleTreePda, bump] = await PublicKey.findProgramAddress(
+      [Buffer.from("merkle_tree_1")],
+      MerkleRewardsProgram.programId
+    );
 
-//     // Fund the emissions account for testing
-//     await program.rpc.calculateAndMint({
-//       accounts: {
-//         emissionsAccount: emissionsAccountPda,
-//         mint: mintKeypair.publicKey,
-//         to: associatedTokenAccount.address,
-//         mintAuthority: wallet.publicKey,
-//         tokenProgram: TOKEN_PROGRAM_ID,
-//       },
-//       signers: [wallet.payer],
-//     });
+    // Fund the emissions account for testing
+    await program.rpc.calculateAndMint({
+      accounts: {
+        emissionsAccount: emissionsAccountPda,
+        mint: mintKeypair.publicKey,
+        to: associatedTokenAccount.address,
+        mintAuthority: wallet.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      signers: [wallet.payer],
+    });
 
-//     const valueToClaim = new anchor.BN(amountToClaim);
-//     const tokenAssociatedAccount = await getOrCreateAssociatedTokenAccount(
-//       provider.connection,
-//       wallet.payer,
-//       mintKeypair.publicKey,
-//       wallet.publicKey
-//     );
+    const valueToClaim = new anchor.BN(amountToClaim);
+    const tokenAssociatedAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet.payer,
+      mintKeypair.publicKey,
+      wallet.publicKey
+    );
 
-//     const userAssociatedAccount = await getOrCreateAssociatedTokenAccount(
-//       provider.connection,
-//       wallet.payer,
-//       mintKeypair.publicKey,
-//       userKeypair.publicKey
-//     );
+    const userAssociatedAccount = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      wallet.payer,
+      mintKeypair.publicKey,
+      userKeypair.publicKey
+    );
 
-//     const poolType = { lootRaffle: {} };
+    const poolType = { lootRaffle: {} };
 
-//     const mintInfo = await provider.connection.getParsedAccountInfo(mintKeypair.publicKey);
-//     const tokenAccountInfo = await provider.connection.getParsedAccountInfo(tokenAssociatedAccount.address);
+    const mintInfo = await provider.connection.getParsedAccountInfo(mintKeypair.publicKey);
+    const tokenAccountInfo = await provider.connection.getParsedAccountInfo(tokenAssociatedAccount.address);
 
-//     // Fetch balances before claim
-//     const beforeBalance = await provider.connection.getTokenAccountBalance(userAssociatedAccount.address);
+    // Fetch balances before claim
+    const beforeBalance = await provider.connection.getTokenAccountBalance(userAssociatedAccount.address);
 
-//     // Perform the claim_rewards operation
-//     await program.rpc.claimRewards(valueToClaim, poolType, userAddress, formattedProof, {
-//       accounts: {
-//         emissionsAccount: emissionsAccountPda,
-//         merkleProgram: MerkleRewardsProgram.programId,
-//         merkleTree: merkleTreePda,
-//         associatedTokenAccount: tokenAssociatedAccount.address,
-//         userTokenAccount: userAssociatedAccount.address,
-//         authority: wallet.publicKey,
-//         tokenProgram: TOKEN_PROGRAM_ID,
-//         user: wallet.publicKey,
-//       },
-//       signers: [wallet.payer],
-//     });
+    // Perform the claim_rewards operation
+    await program.rpc.claimRewards(valueToClaim, poolType, userAddress, formattedProof, {
+      accounts: {
+        emissionsAccount: emissionsAccountPda,
+        merkleProgram: MerkleRewardsProgram.programId,
+        merkleTree: merkleTreePda,
+        associatedTokenAccount: tokenAssociatedAccount.address,
+        userTokenAccount: userAssociatedAccount.address,
+        authority: wallet.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        user: wallet.publicKey,
+      },
+      signers: [wallet.payer],
+    });
 
-//     // Fetch balances after claim
-//     const afterBalance = await provider.connection.getTokenAccountBalance(userAssociatedAccount.address);
+    // Fetch balances after claim
+    const afterBalance = await provider.connection.getTokenAccountBalance(userAssociatedAccount.address);
 
-//     // Perform assertions to verify expected changes
-//     assert.isAbove(afterBalance.value.uiAmount, beforeBalance.value.uiAmount, "User token account balance should increase after claiming rewards");
+    // Perform assertions to verify expected changes
+    assert.isAbove(afterBalance.value.uiAmount, beforeBalance.value.uiAmount, "User token account balance should increase after claiming rewards");
 
-//     console.log("Claimed rewards successfully");
-//   });
+    console.log("Claimed rewards successfully");
+  });
 
 it("Transfers tokens to bucket", async () => {
   const [emissionsAccountPda, emissionsAccountBump] = await PublicKey.findProgramAddress(

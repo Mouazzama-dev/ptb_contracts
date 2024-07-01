@@ -1,18 +1,16 @@
 [features]
 seeds = false
 skip-lint = false
-[programs.devnet]
+
+[programs.localnet]
 minter = "AqpXhZpaTaWbcDawvWrTsstmi7Bf8XY3bLH97wXg6ipS"
-reward_dist = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgi2"
-emission_dist = "ADrM2jnS2kFVfQYqjGmnXU9bZom89eKZKpJBf4FjDgi3"
-
-
+merkle_rewards = "ExUtjdNkv4YzPibQBVU8JDCipXxvwxRcGrkQZQfvuVaM"
 [registry]
-url = "https://api.apr.dev"
+url = "http://localhost:8899"
 
 [provider]
-cluster = "devnet"
-wallet = "/home/mouazzama/new_program-keypair.json"
+cluster = "localnet"
+wallet = "/home/mouazzama/keyXwxwkXSWz56baxt8W9W4VS9MM3dhv7gQgVciaaBu.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
